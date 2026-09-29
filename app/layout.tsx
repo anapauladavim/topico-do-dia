@@ -1,22 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Comic_Neue, Kalam } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
-
-const comic = Comic_Neue({
-  subsets: ['latin'],
-  weight: ['300', '400', '700'],
-  variable: '--font-comic',
-  display: 'swap',
-})
-
-const kalam = Kalam({
-  subsets: ['latin'],
-  weight: ['300', '400', '700'],
-  variable: '--font-hand',
-  display: 'swap',
-})
 
 export const metadata: Metadata = {
   title: 'Tópico do Dia',
@@ -36,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className={`light ${comic.variable} ${kalam.variable}`}>
+    <html lang="pt-BR" className="light">
       <body className="font-sans antialiased">
         {children}
         <Toaster position="top-center" />
