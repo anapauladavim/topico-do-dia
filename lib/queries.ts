@@ -21,17 +21,37 @@ export async function syncSchedules(): Promise<void> {
 
   await svc
     .from('questions')
-    .update({ status: 'published', updated_at: nowIso })
-    .eq('status', 'scheduled')
-    .not('publish_at', 'is', null)
-    .lte('publish_at', nowIso)
-
-  await svc
-    .from('questions')
     .update({ status: 'closed', updated_at: nowIso })
     .eq('status', 'published')
     .not('close_at', 'is', null)
     .lte('close_at', nowIso)
+
+  // A schedule must never create two simultaneous topics. Only promote the
+  // oldest due question when there is no currently open published question.
+  const { data: active } = await svc
+    .from('questions')
+    .select('id')
+    .eq('status', 'published')
+    .or(`close_at.is.null,close_at.gt.${nowIso}`)
+    .limit(1)
+    .maybeSingle()
+  if (active) return
+
+  const { data: next } = await svc
+    .from('questions')
+    .select('id')
+    .eq('status', 'scheduled')
+    .not('publish_at', 'is', null)
+    .lte('publish_at', nowIso)
+    .order('publish_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+  if (next) {
+    await svc
+      .from('questions')
+      .update({ status: 'published', updated_at: nowIso })
+      .eq('id', next.id)
+  }
 }
 
 export async function getActiveQuestion(): Promise<Question | null> {

@@ -5,6 +5,7 @@ import {
   verifyPassword,
   createAdminSession,
   destroyAdminSession,
+  isAdminAuthConfigured,
 } from '@/lib/auth'
 
 export interface LoginResult {
@@ -18,6 +19,12 @@ export async function adminLogin(
 ): Promise<LoginResult> {
   const password = String(formData.get('password') ?? '')
   if (!password) return { ok: false, error: 'Informe a senha.' }
+  if (!isAdminAuthConfigured()) {
+    return {
+      ok: false,
+      error: 'O acesso administrativo ainda não foi configurado no servidor.',
+    }
+  }
 
   // Small artificial delay smooths timing differences on repeated attempts.
   await new Promise((r) => setTimeout(r, 300))
