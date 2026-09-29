@@ -9,6 +9,8 @@ export function TallyResults({
   animate?: boolean
 }) {
   const { optionResults, customAnswers, totalVotes } = results
+  const percentage = (count: number) =>
+    totalVotes === 0 ? 0 : Math.round((count / totalVotes) * 100)
 
   return (
     <div className="flex flex-col gap-4">
@@ -18,7 +20,7 @@ export function TallyResults({
             <div className="flex items-baseline justify-between gap-3">
               <span className="font-hand text-lg leading-snug">{option.label}</span>
               <span className="font-hand text-base text-muted-foreground">
-                {count}
+                {count} · {percentage(count)}%
               </span>
             </div>
             <TallyMarks count={count} animate={animate} />
@@ -39,7 +41,7 @@ export function TallyResults({
                     {c.custom_answer}
                   </span>
                   <span className="font-hand text-base text-muted-foreground">
-                    {c.count}
+                    {c.count} · {percentage(c.count)}%
                   </span>
                 </div>
                 <TallyMarks count={c.count} animate={animate} />

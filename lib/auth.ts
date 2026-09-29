@@ -1,22 +1,55 @@
 import 'server-only'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto'
+import {
+  createHmac,
+  timingSafeEqual,
+  randomBytes,
+  pbkdf2Sync,
+} from 'node:crypto'
 
 const ADMIN_COOKIE = 'tdd_admin'
 const SESSION_TTL_MS = 1000 * 60 * 60 * 8 // 8 hours
 
 function signingKey(): string {
-  // Derive the HMAC key from server-only secrets. Never sent to the client.
-  return `${process.env.SUPABASE_JWT_SECRET ?? ''}:${process.env.ADMIN_PASSWORD ?? ''}`
+  // A dedicated value lets an administrator rotate the password without
+  // invalidating cookies unexpectedly. The fallback keeps old installations
+  // that only set ADMIN_PASSWORD working.
+  return process.env.ADMIN_SESSION_SECRET ?? process.env.ADMIN_PASSWORD_HASH ?? process.env.ADMIN_PASSWORD ?? ''
+}
+
+/** True only when the server has enough secret configuration to authenticate. */
+export function isAdminAuthConfigured(): boolean {
+  return Boolean(signingKey() && (process.env.ADMIN_PASSWORD_HASH || process.env.ADMIN_PASSWORD))
 }
 
 function sign(payload: string): string {
   return createHmac('sha256', signingKey()).update(payload).digest('hex')
 }
 
-/** Constant-time password check against the ADMIN_PASSWORD env var. */
+/**
+ * Constant-time password check. Recommended format:
+ * pbkdf2$sha512$210000$<hex salt>$<hex derived key>
+ *
+ * ADMIN_PASSWORD is retained as a backwards-compatible development fallback;
+ * production deployments should use ADMIN_PASSWORD_HASH and ADMIN_SESSION_SECRET.
+ */
 export function verifyPassword(input: string): boolean {
+  const encoded = process.env.ADMIN_PASSWORD_HASH
+  if (encoded) {
+    const [kind, digest, iterations, salt, expected] = encoded.split('$')
+    const rounds = Number(iterations)
+    if (
+      kind !== 'pbkdf2' ||
+      digest !== 'sha512' ||
+      !Number.isInteger(rounds) ||
+      rounds < 100_000 ||
+      !/^[a-f0-9]+$/i.test(salt) ||
+      !/^[a-f0-9]+$/i.test(expected)
+    ) return false
+    const actual = pbkdf2Sync(input, Buffer.from(salt, 'hex'), rounds, expected.length / 2, 'sha512').toString('hex')
+    return actual.length === expected.length && timingSafeEqual(Buffer.from(actual), Buffer.from(expected))
+  }
   const expected = process.env.ADMIN_PASSWORD ?? ''
   if (!expected) return false
   const a = Buffer.from(input)
@@ -65,6 +98,7 @@ export async function destroyAdminSession(): Promise<void> {
 }
 
 export async function isAdmin(): Promise<boolean> {
+  if (!isAdminAuthConfigured()) return false
   const store = await cookies()
   return isValidToken(store.get(ADMIN_COOKIE)?.value)
 }

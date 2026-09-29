@@ -96,6 +96,8 @@ export async function saveQuestion(formData: FormData): Promise<MutationResult> 
   if (!STATUSES.includes(status)) return { ok: false, error: 'Status inválido.' }
   if (status === 'scheduled' && !publish_at)
     return { ok: false, error: 'Defina a data de publicação para agendar.' }
+  if (publish_at && close_at && new Date(close_at) <= new Date(publish_at))
+    return { ok: false, error: 'O encerramento deve ocorrer após a publicação.' }
   if (response_type !== 'open' && options.length < 2)
     return { ok: false, error: 'Adicione pelo menos duas opções de resposta.' }
 
@@ -104,6 +106,22 @@ export async function saveQuestion(formData: FormData): Promise<MutationResult> 
 
   let questionId = id
   if (id) {
+    const { data: existing } = await svc
+      .from('questions')
+      .select('status, response_type')
+      .eq('id', id)
+      .maybeSingle()
+    if (!existing) return { ok: false, error: 'Pergunta não encontrada.' }
+    // Option replacement would rewrite the historical meaning of recorded votes.
+    if (
+      ['published', 'closed', 'archived'].includes(existing.status) &&
+      (existing.response_type !== response_type || response_type !== 'open')
+    ) {
+      return {
+        ok: false,
+        error: 'Para preservar os resultados, perguntas públicas não podem alterar tipo ou opções.',
+      }
+    }
     const { error } = await svc
       .from('questions')
       .update({

@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-comic), 'Comic Sans MS', system-ui, sans-serif;
-  --font-hand: var(--font-hand), var(--font-comic), cursive;
+  --font-sans: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', cursive;
+  --font-hand: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', cursive;
 
   --color-ring: var(--ring);
   --color-input: var(--input);
