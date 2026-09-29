@@ -1,36 +1,33 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
+import { Comic_Neue, Kalam } from 'next/font/google'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
+const comic = Comic_Neue({
+  subsets: ['latin'],
+  weight: ['300', '400', '700'],
+  variable: '--font-comic',
+  display: 'swap',
+})
+
+const kalam = Kalam({
+  subsets: ['latin'],
+  weight: ['300', '400', '700'],
+  variable: '--font-hand',
+  display: 'swap',
+})
+
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: 'Tópico do Dia',
+  description:
+    'Responda à pergunta do dia, veja os resultados em marcas de contagem feitas à mão e participe da discussão no Birô comenta.',
   generator: 'v0.app',
-  icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
-  },
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'light dark',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' },
-  ],
+  colorScheme: 'light',
+  themeColor: '#eae7df',
 }
 
 export default function RootLayout({
@@ -39,9 +36,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased">
+    <html lang="pt-BR" className={`light ${comic.variable} ${kalam.variable}`}>
+      <body className="font-sans antialiased">
         {children}
+        <Toaster position="top-center" />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
