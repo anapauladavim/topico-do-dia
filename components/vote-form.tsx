@@ -65,6 +65,7 @@ export function VoteForm({
             key={option.id}
             id={option.id}
             label={option.label}
+            imageUrl={option.image_url}
             checked={selected === option.id}
             onSelect={() => setSelected(option.id)}
           />
@@ -105,11 +106,13 @@ export function VoteForm({
 function OptionRow({
   id,
   label,
+  imageUrl,
   checked,
   onSelect,
 }: {
   id: string
   label: string
+  imageUrl?: string | null
   checked: boolean
   onSelect: () => void
 }) {
@@ -151,7 +154,7 @@ function OptionRow({
           </svg>
         )}
       </span>
-      <span className="font-hand text-lg leading-snug">{label}</span>
+      <span className="flex min-w-0 flex-1 flex-col gap-2">{imageUrl && <img src={imageUrl} alt={label || 'Opção de voto'} className="max-h-72 w-full rounded-md object-contain" loading="lazy" />}<span className="font-hand text-lg leading-snug">{label}</span></span>
     </label>
   )
 }
