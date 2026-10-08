@@ -21,6 +21,7 @@ create table public.answer_options (
   id uuid primary key default gen_random_uuid(),
   question_id uuid not null references public.questions(id) on delete cascade,
   label text not null check (char_length(label) between 1 and 200),
+  image_url text check (image_url is null or char_length(image_url) <= 2000),
   position integer not null check (position >= 0),
   created_at timestamptz not null default now(),
   unique (question_id, position)
