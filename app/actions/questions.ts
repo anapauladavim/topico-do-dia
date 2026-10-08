@@ -28,6 +28,7 @@ const STATUSES: QuestionStatus[] = [
 interface OptionInput {
   id?: string
   label: string
+  image_url?: string | null
 }
 
 function parseOptions(raw: FormDataEntryValue | null): OptionInput[] {
@@ -36,11 +37,12 @@ function parseOptions(raw: FormDataEntryValue | null): OptionInput[] {
     const parsed = JSON.parse(String(raw))
     if (!Array.isArray(parsed)) return []
     return parsed
-      .map((o: { id?: string; label?: string }) => ({
-        id: o.id,
-        label: sanitizeText(o.label, LIMITS.optionLabel),
-      }))
-      .filter((o) => o.label.length > 0)
+      .map((o: { id?: string; label?: string; image_url?: string }) => {
+        const rawUrl = String(o.image_url ?? '').trim()
+        const image_url = /^https?:\/\//i.test(rawUrl) && rawUrl.length <= 2000 ? rawUrl : null
+        return { id: o.id, label: sanitizeText(o.label, LIMITS.optionLabel), image_url }
+      })
+      .filter((o) => o.label.length > 0 || o.image_url)
   } catch {
     return []
   }
@@ -159,7 +161,8 @@ export async function saveQuestion(formData: FormData): Promise<MutationResult> 
     await svc.from('answer_options').delete().eq('question_id', questionId)
     const rows = options.map((o, i) => ({
       question_id: questionId,
-      label: o.label,
+      label: o.label || `Opção ${i + 1}`,
+      image_url: o.image_url,
       position: i,
     }))
     if (rows.length) {
@@ -219,7 +222,7 @@ export async function duplicateQuestion(id: string): Promise<MutationResult> {
 
   const { data: opts } = await svc
     .from('answer_options')
-    .select('label, position')
+    .select('label, image_url, position')
     .eq('question_id', id)
     .order('position', { ascending: true })
 
@@ -228,6 +231,7 @@ export async function duplicateQuestion(id: string): Promise<MutationResult> {
       opts.map((o) => ({
         question_id: created.id,
         label: o.label,
+        image_url: o.image_url,
         position: o.position,
       })),
     )
