@@ -18,7 +18,7 @@ export function TallyResults({
         {optionResults.map(({ option, count }) => (
           <li key={option.id} className="flex flex-col gap-1">
             <div className="flex items-baseline justify-between gap-3">
-              <span className="font-hand text-lg leading-snug">{option.label}</span>
+              <span className="flex min-w-0 flex-1 items-center gap-3">{option.image_url && <img src={option.image_url} alt="" className="h-16 w-16 shrink-0 rounded object-cover" loading="lazy" />}<span className="font-hand text-lg leading-snug">{option.label}</span></span>
               <span className="font-hand text-base text-muted-foreground">
                 {count} · {percentage(count)}%
               </span>
