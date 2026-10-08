@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import type { Comment } from '@/lib/types'
 
 const NICK_KEY = 'tdd_nickname'
+const ROTATIONS = ['-rotate-1', 'rotate-1', 'rotate-0', '-rotate-2', 'rotate-2']
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
@@ -25,12 +26,7 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString('pt-BR')
 }
 
-export function CommentsSection({
-  questionId,
-  initialComments,
-  initialTotal,
-  initialHasMore,
-}: {
+export function CommentsSection({ questionId, initialComments, initialTotal, initialHasMore }: {
   questionId: string
   initialComments: Comment[]
   initialTotal: number
@@ -45,7 +41,6 @@ export function CommentsSection({
   const [pending, startTransition] = useTransition()
   const [loadingMore, startLoadMore] = useTransition()
 
-  // Remember nickname across comments on this device.
   useState(() => {
     if (typeof window !== 'undefined') {
       const stored = window.localStorage.getItem(NICK_KEY)
@@ -55,14 +50,8 @@ export function CommentsSection({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (nickname.trim().length < 2) {
-      toast.error('Informe um apelido (mín. 2 caracteres).')
-      return
-    }
-    if (body.trim().length < 2) {
-      toast.error('Escreva um comentário.')
-      return
-    }
+    if (nickname.trim().length < 2) return toast.error('Informe um apelido (mín. 2 caracteres).')
+    if (body.trim().length < 2) return toast.error('Escreva um comentário.')
     const fd = new FormData()
     fd.set('questionId', questionId)
     fd.set('nickname', nickname.trim())
@@ -70,20 +59,12 @@ export function CommentsSection({
     startTransition(async () => {
       const res = await submitComment(fd)
       if (res.ok) {
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem(NICK_KEY, nickname.trim())
-        }
+        if (typeof window !== 'undefined') window.localStorage.setItem(NICK_KEY, nickname.trim())
         setBody('')
         toast.success('Comentário publicado!')
-        // Refresh from the top to include the new comment.
         const page = await loadComments(questionId, 0)
-        setComments(page.comments)
-        setTotal(page.total)
-        setHasMore(page.hasMore)
-        router.refresh()
-      } else {
-        toast.error(res.error ?? 'Não foi possível comentar.')
-      }
+        setComments(page.comments); setTotal(page.total); setHasMore(page.hasMore); router.refresh()
+      } else toast.error(res.error ?? 'Não foi possível comentar.')
     })
   }
 
@@ -91,98 +72,40 @@ export function CommentsSection({
     startLoadMore(async () => {
       const page = await loadComments(questionId, comments.length)
       setComments((prev) => [...prev, ...page.comments])
-      setTotal(page.total)
-      setHasMore(page.hasMore)
+      setTotal(page.total); setHasMore(page.hasMore)
     })
   }
 
   return (
-    <section aria-labelledby="biro-heading" className="flex flex-col gap-5">
+    <section aria-labelledby="birot-heading" className="mx-auto flex w-full max-w-2xl flex-col gap-5">
       <div className="flex items-center gap-3">
-        <h2
-          id="biro-heading"
-          className="font-hand text-2xl font-bold -rotate-1"
-        >
-          Birô comenta
-        </h2>
-        <span className="font-hand text-sm text-muted-foreground">
-          {total} comentário{total === 1 ? '' : 's'}
-        </span>
+        <h2 id="birot-heading" className="font-hand text-2xl font-bold -rotate-1">Birot comenta</h2>
+        <span className="font-hand text-sm text-muted-foreground">{total} comentário{total === 1 ? '' : 's'}</span>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="paper-sheet flex flex-col gap-3 rounded-md border border-border p-4"
-      >
-        <Input
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          placeholder="Seu apelido"
-          maxLength={40}
-          disabled={pending}
-          className="font-hand text-base"
-          aria-label="Apelido"
-        />
-        <Textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value.slice(0, 1000))}
-          placeholder="Escreva um comentário..."
-          rows={3}
-          maxLength={1000}
-          disabled={pending}
-          className="resize-none font-hand text-base"
-          aria-label="Comentário"
-        />
+      <form onSubmit={handleSubmit} className="paper-sheet flex flex-col gap-3 border border-border p-4">
+        <Input value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Seu apelido" maxLength={40} disabled={pending} className="font-hand text-base" aria-label="Apelido" />
+        <Textarea value={body} onChange={(e) => setBody(e.target.value.slice(0, 1000))} placeholder="Escreva um comentário..." rows={3} maxLength={1000} disabled={pending} className="resize-none font-hand text-base" aria-label="Comentário" />
         <div className="flex items-center justify-between">
-          <span className="font-hand text-xs text-muted-foreground">
-            {body.length}/1000
-          </span>
-          <Button
-            type="submit"
-            disabled={pending}
-            className="font-bold uppercase tracking-wide"
-          >
-            {pending ? 'Publicando...' : 'Comentar'}
-          </Button>
+          <span className="font-hand text-xs text-muted-foreground">{body.length}/1000</span>
+          <Button type="submit" disabled={pending} className="font-bold uppercase tracking-wide">{pending ? 'Publicando...' : 'Comentar'}</Button>
         </div>
       </form>
 
-      <ul className="flex flex-col gap-3">
-        {comments.length === 0 && (
-          <li className="font-hand text-muted-foreground">
-            Ainda não há comentários. Comece a conversa!
-          </li>
-        )}
-        {comments.map((c) => (
-          <li
-            key={c.id}
-            className={cn(
-              'rounded-md border-l-4 border-primary/60 bg-card px-4 py-3',
-            )}
-          >
+      <ul className="grid gap-4 sm:grid-cols-2">
+        {comments.length === 0 && <li className="font-hand text-muted-foreground sm:col-span-2">Ainda não há comentários. Comece a conversa!</li>}
+        {comments.map((c, i) => (
+          <li key={c.id} className={cn('post-it min-h-32 p-5', ROTATIONS[i % ROTATIONS.length])}>
             <div className="flex items-baseline justify-between gap-2">
               <span className="font-hand text-lg font-bold">{c.nickname}</span>
-              <span className="font-hand text-xs text-muted-foreground">
-                {timeAgo(c.created_at)}
-              </span>
+              <span className="font-hand text-xs text-muted-foreground">{timeAgo(c.created_at)}</span>
             </div>
-            <p className="mt-1 whitespace-pre-wrap break-words font-sans text-base leading-relaxed">
-              {c.body}
-            </p>
+            <p className="mt-2 whitespace-pre-wrap break-words font-hand text-base leading-relaxed">{c.body}</p>
           </li>
         ))}
       </ul>
 
-      {hasMore && (
-        <Button
-          variant="outline"
-          onClick={handleLoadMore}
-          disabled={loadingMore}
-          className="font-hand"
-        >
-          {loadingMore ? 'Carregando...' : 'Ver mais comentários'}
-        </Button>
-      )}
+      {hasMore && <Button variant="outline" onClick={handleLoadMore} disabled={loadingMore} className="font-hand">{loadingMore ? 'Carregando...' : 'Ver mais comentários'}</Button>}
     </section>
   )
 }
