@@ -154,7 +154,7 @@ function OptionRow({
           </svg>
         )}
       </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-2">{imageUrl && <img src={imageUrl} alt={label || 'Opção de voto'} className="max-h-72 w-full rounded-md object-contain" loading="lazy" />}<span className="font-hand text-lg leading-snug">{label}</span></span>
+      <span className="flex min-w-0 flex-1 flex-col gap-2">{imageUrl && <img src={imageUrl} alt={label || 'Opção de voto'} className="max-h-72 w-full rounded-md object-contain" loading="lazy" />}{label && !/^Opção \\d+$/.test(label) && <span className="font-hand text-lg leading-snug">{label}</span>}</span>
     </label>
   )
 }
