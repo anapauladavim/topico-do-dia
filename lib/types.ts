@@ -11,6 +11,7 @@ export interface AnswerOption {
   id: string
   question_id: string
   label: string
+  image_url: string | null
   position: number
   created_at: string
 }
